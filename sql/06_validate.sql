@@ -1,6 +1,6 @@
 -- ============================================================
 -- Validation after a run: counts, rejects, exceptions vs the answer key
--- Load data/answer_key.csv into rpt.answer_key first (Import wizard or a second copy activity)
+-- Run 07_answer_key.sql first to load the planted cases
 -- ============================================================
 IF OBJECT_ID('rpt.answer_key') IS NULL
 CREATE TABLE rpt.answer_key (submission_id VARCHAR(30) NOT NULL, exception_type VARCHAR(40) NOT NULL);

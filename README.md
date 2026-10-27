@@ -65,7 +65,7 @@ Business days exclude weekends and South African public holidays (`dbo.calendar`
 
 ## Deploy
 
-**With Bicep (recommended):** `infra/main.bicep` deploys everything in one command. See `infra/README.md`.
+**Step by step: `docs/DEPLOY.md`.** `infra/main.bicep` deploys every Azure resource in one command, and `infra/run_sql.sh` creates the database objects.
 
 **By hand in the portal:**
 
