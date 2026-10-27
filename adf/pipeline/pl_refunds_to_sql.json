@@ -499,7 +499,7 @@
                 "typeProperties": {
                     "source": {
                         "type": "AzureSqlSource",
-                        "sqlReaderQuery": "SELECT e.exception_type, e.submission_id, r.store, r.area_coach, r.submitted_at, r.amount, e.detail, e.as_of_date FROM rpt.refund_exception e JOIN dbo.refund_request r ON r.submission_id = e.submission_id ORDER BY e.exception_type, r.area_coach, r.submitted_at",
+                        "sqlReaderQuery": "SELECT e.exception_type, e.submission_id, r.store, r.area_coach, CONVERT(char(16), r.submitted_at, 120) AS submitted_at, r.amount, e.detail, CONVERT(char(10), e.as_of_date, 23) AS as_of_date FROM rpt.refund_exception e JOIN dbo.refund_request r ON r.submission_id = e.submission_id ORDER BY e.exception_type, r.area_coach, r.submitted_at",
                         "queryTimeout": "00:10:00"
                     },
                     "sink": {
@@ -556,7 +556,7 @@
                         "queryTimeout": "00:10:00",
                         "sqlReaderQuery": {
                             "type": "Expression",
-                            "value": "@concat('SELECT r.run_id, r.as_of_date, r.staged, r.rejected, r.inserted, r.updated, r.exceptions, j.reason AS reject_reason, j.submission_id AS rejected_id, j.raw_amount FROM rpt.refund_run r LEFT JOIN rpt.refund_reject j ON j.run_id = r.run_id WHERE r.run_id = ''', pipeline().RunId, '''')"
+                            "value": "@concat('SELECT r.run_id, CONVERT(char(10), r.as_of_date, 23) AS as_of_date, r.staged, r.rejected, r.inserted, r.updated, r.exceptions, j.reason AS reject_reason, j.submission_id AS rejected_id, j.raw_amount FROM rpt.refund_run r LEFT JOIN rpt.refund_reject j ON j.run_id = r.run_id WHERE r.run_id = ''', pipeline().RunId, '''')"
                         }
                     },
                     "sink": {

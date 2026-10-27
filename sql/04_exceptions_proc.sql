@@ -41,7 +41,13 @@ BEGIN
     FROM dbo.refund_request WHERE has_statement = 0
     UNION ALL
     -- Masking must be exactly 6 digits and 4 digits; anything else may mean more of the card was captured
-    SELECT submission_id, 'CARD_MASK_INVALID', CONCAT(N'first6 length ', LEN(card_first6), N', last4 length ', LEN(card_last4)),
+    SELECT submission_id, 'CARD_MASK_INVALID',
+           CONCAT(N'first6 ', CASE WHEN card_first6 IS NULL THEN N'missing'
+                                   WHEN LEN(card_first6) <> 6 THEN CONCAT(LEN(card_first6), N' characters')
+                                   WHEN card_first6 LIKE '%[^0-9]%' THEN N'not all digits' ELSE N'ok' END,
+                  N', last4 ', CASE WHEN card_last4 IS NULL THEN N'missing'
+                                   WHEN LEN(card_last4) <> 4 THEN CONCAT(LEN(card_last4), N' characters')
+                                   WHEN card_last4 LIKE '%[^0-9]%' THEN N'not all digits' ELSE N'ok' END),
            @as_of_date, @run_id
     FROM dbo.refund_request
     WHERE card_first6 IS NULL OR card_last4 IS NULL

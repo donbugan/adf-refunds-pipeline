@@ -43,12 +43,14 @@ az deployment group create -g rg-refunds -f infra/main.bicep \
   --query properties.outputs
 ```
 
-It takes about 3–5 minutes. Copy the outputs into variables, using your own values:
+It takes about 3–5 minutes. Then put the outputs into variables:
 
 ```bash
-SQL=<sqlServer output>          # e.g. refunds-sql-abc123.database.windows.net
-ADF=<factory output>            # e.g. refunds-adf-abc123
-STG=<storageAccount output>     # e.g. refundsabc123
+OUT=$(az deployment group show -g rg-refunds -n main --query properties.outputs)
+SQL=$(echo $OUT | jq -r .sqlServer.value)
+ADF=$(echo $OUT | jq -r .factory.value)
+STG=$(echo $OUT | jq -r .storageAccount.value)
+echo $SQL $ADF $STG
 ```
 
 **If it fails:**
@@ -58,6 +60,18 @@ STG=<storageAccount output>     # e.g. refundsabc123
 📸 **Screenshot:** the resource group overview, showing the storage account, SQL server, database and data factory.
 
 ## 4. Create the database objects
+
+Cloud Shell has no `sqlcmd`, so install go-sqlcmd into your home folder first:
+
+```bash
+mkdir -p ~/bin && cd ~/bin
+curl -sSL -o sqlcmd.tbz https://github.com/microsoft/go-sqlcmd/releases/latest/download/sqlcmd-linux-amd64.tar.bz2
+tar -xjf sqlcmd.tbz sqlcmd && rm sqlcmd.tbz
+export PATH=~/bin:$PATH
+cd ~/adf-refunds-pipeline
+```
+
+Then:
 
 ```bash
 bash infra/run_sql.sh $SQL $ADF
@@ -113,7 +127,7 @@ Click **Debug** again with the same file. Expect `inserted 0, updated 304`, and 
 
 ## 8. Validate against the answer key
 
-Run `sql/06_validate.sql`, either with `sqlcmd -S $SQL -d refunds --authentication-method ActiveDirectoryDefault -i sql/06_validate.sql` or block by block in the query editor. The scorecard should show `false_pos 0` and `missed 0` for every type.
+Run `sql/06_validate.sql`, either with `sqlcmd -S $SQL -d refunds --authentication-method ActiveDirectoryAzCli -i sql/06_validate.sql` or block by block in the query editor. The scorecard should show `false_pos 0` and `missed 0` for every type.
 
 📸 **Screenshots:** the scorecard, plus the report files in storage (`refunds/reports/`) in the portal.
 

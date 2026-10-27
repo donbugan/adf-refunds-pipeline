@@ -57,11 +57,14 @@ Business days exclude weekends and South African public holidays (`dbo.calendar`
 
 `data/answer_key.csv` lists every planted case. `sql/06_validate.sql` scores the run against it (true positives, false positives, missed).
 
-## What has been tested, and what has not
+## What has been tested
 
-- The exception rules were checked locally against the answer key with DuckDB (`tests/check_rules_duckdb.py`): every type matched, with 0 false positives and 0 missed.
-- `infra/main.bicep` compiles with the Bicep CLI (0.48.1).
-- The T-SQL, the ADF JSON and the Bicep deployment were written for Azure SQL Database and Data Factory. Until they have run in Azure, treat them as untested. Results from the Azure run go in `RESULTS.md`.
+It has been deployed and run in Azure (27 October 2026):
+- **Load:** 307 rows staged, 3 rejected, 304 merged.
+- **Rerun:** 0 inserted and 304 updated.
+- **Exceptions:** all 98 planted cases found, with 0 false positives.
+
+Full results are in [`RESULTS.md`](RESULTS.md). The exception rules are also checked locally against the answer key with DuckDB (`tests/check_rules_duckdb.py`).
 
 ## Deploy
 
