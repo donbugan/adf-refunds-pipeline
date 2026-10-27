@@ -60,9 +60,15 @@ Business days exclude weekends and South African public holidays (`dbo.calendar`
 ## What has been tested, and what has not
 
 - The exception rules were checked locally against the answer key with DuckDB (`tests/check_rules_duckdb.py`): every type matched, with 0 false positives and 0 missed.
-- The T-SQL and the ADF JSON were written for Azure SQL Database and Data Factory. Until they have run in Azure, treat them as untested. Results from the Azure run go in `RESULTS.md`.
+- `infra/main.bicep` compiles with the Bicep CLI (0.48.1).
+- The T-SQL, the ADF JSON and the Bicep deployment were written for Azure SQL Database and Data Factory. Until they have run in Azure, treat them as untested. Results from the Azure run go in `RESULTS.md`.
 
 ## Deploy
+
+**With Bicep (recommended):** `infra/main.bicep` deploys everything in one command. See `infra/README.md`.
+
+**By hand in the portal:**
+
 
 1. **Resource group, storage, SQL.** Create a storage account with a container `refunds` (folders `inbound`, `reports`). Create an Azure SQL Database (serverless or Basic is enough) with Microsoft Entra admin set to yourself.
 2. **SQL objects.** Run `sql/01` to `sql/04` in order in the query editor.
@@ -86,6 +92,7 @@ sql/03_merge_proc.sql       usp_merge_refunds
 sql/04_exceptions_proc.sql  usp_build_refund_exceptions, rpt.v_refund_sla_by_area
 sql/05_security.sql         least-privilege grants for the factory identity
 sql/06_validate.sql         run checks and scorecard against the answer key
+infra/main.bicep            all Azure resources and factory objects as code
 adf/                        linked services, datasets, pipeline (ADF Git layout)
 tests/check_rules_duckdb.py local check of the exception rules
 docs/decisions.md           why it is built this way
