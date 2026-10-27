@@ -1,0 +1,11 @@
+{
+    "name": "ls_blob_refunds",
+    "properties": {
+        "type": "AzureBlobStorage",
+        "description": "Storage account via the factory's system-assigned managed identity (no keys).",
+        "typeProperties": {
+            "serviceEndpoint": "https://<storageaccount>.blob.core.windows.net/",
+            "accountKind": "StorageV2"
+        }
+    }
+}

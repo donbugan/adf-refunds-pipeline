@@ -1,0 +1,32 @@
+{
+    "name": "ds_report_csv",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_blob_refunds",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "fileName": {
+                "type": "string"
+            }
+        },
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "container": "refunds",
+                "folderPath": "reports",
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                }
+            },
+            "columnDelimiter": ",",
+            "quoteChar": "\"",
+            "escapeChar": "\"",
+            "firstRowAsHeader": true,
+            "encodingName": "UTF-8"
+        },
+        "schema": []
+    }
+}

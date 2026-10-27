@@ -1,0 +1,14 @@
+{
+    "name": "ls_sql_refunds",
+    "properties": {
+        "type": "AzureSqlDatabase",
+        "description": "Azure SQL Database via the factory's system-assigned managed identity.",
+        "typeProperties": {
+            "server": "<sqlserver>.database.windows.net",
+            "database": "<database>",
+            "encrypt": "mandatory",
+            "trustServerCertificate": false,
+            "authenticationType": "SystemAssignedManagedIdentity"
+        }
+    }
+}

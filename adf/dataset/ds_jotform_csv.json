@@ -1,0 +1,106 @@
+{
+    "name": "ds_jotform_csv",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_blob_refunds",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "fileName": {
+                "type": "string",
+                "defaultValue": "jotform_refunds_export.csv"
+            }
+        },
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "container": "refunds",
+                "folderPath": "inbound",
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                }
+            },
+            "columnDelimiter": ",",
+            "quoteChar": "\"",
+            "escapeChar": "\"",
+            "firstRowAsHeader": true,
+            "encodingName": "UTF-8"
+        },
+        "schema": [
+            {
+                "name": "Submission ID",
+                "type": "String"
+            },
+            {
+                "name": "Submission Date",
+                "type": "String"
+            },
+            {
+                "name": "Store",
+                "type": "String"
+            },
+            {
+                "name": "Area Coach",
+                "type": "String"
+            },
+            {
+                "name": "Captured By",
+                "type": "String"
+            },
+            {
+                "name": "Customer Full Name",
+                "type": "String"
+            },
+            {
+                "name": "Customer Contact Number",
+                "type": "String"
+            },
+            {
+                "name": "Date of Transaction",
+                "type": "String"
+            },
+            {
+                "name": "Amount",
+                "type": "String"
+            },
+            {
+                "name": "Reason",
+                "type": "String"
+            },
+            {
+                "name": "Card First 6 Digits",
+                "type": "String"
+            },
+            {
+                "name": "Card Last 4 Digits",
+                "type": "String"
+            },
+            {
+                "name": "Bank Statement",
+                "type": "String"
+            },
+            {
+                "name": "POPIA Consent",
+                "type": "String"
+            },
+            {
+                "name": "Recon Reviewed At",
+                "type": "String"
+            },
+            {
+                "name": "Sent To Bank At",
+                "type": "String"
+            },
+            {
+                "name": "Closed At",
+                "type": "String"
+            },
+            {
+                "name": "Status",
+                "type": "String"
+            }
+        ]
+    }
+}

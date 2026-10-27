@@ -1,0 +1,11 @@
+{
+    "name": "ds_sql_query",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_sql_refunds",
+            "type": "LinkedServiceReference"
+        },
+        "type": "AzureSqlTable",
+        "typeProperties": {}
+    }
+}

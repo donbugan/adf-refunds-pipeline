@@ -1,0 +1,580 @@
+{
+    "name": "pl_refunds_to_sql",
+    "properties": {
+        "description": "Jotform card-refund export -> Azure SQL. Guard, stage as text, typed merge with per-row rejects, SLA and data-quality exceptions, reconciliation report.",
+        "parameters": {
+            "fileName": {
+                "type": "string",
+                "defaultValue": "jotform_refunds_export.csv"
+            },
+            "asOfDate": {
+                "type": "string",
+                "defaultValue": "2026-10-27"
+            },
+            "expectedColumns": {
+                "type": "int",
+                "defaultValue": 18
+            }
+        },
+        "activities": [
+            {
+                "name": "Check file",
+                "type": "GetMetadata",
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "ds_jotform_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "fileName": "@pipeline().parameters.fileName"
+                        }
+                    },
+                    "fieldList": [
+                        "exists",
+                        "size",
+                        "columnCount"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings"
+                    },
+                    "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "File is usable",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check file",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "expression": {
+                        "type": "Expression",
+                        "value": "@and(activity('Check file').output.exists, and(greater(activity('Check file').output.size, 0), equals(activity('Check file').output.columnCount, pipeline().parameters.expectedColumns)))"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Stop bad file",
+                            "type": "Fail",
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat('File ', pipeline().parameters.fileName, ' missing, empty or wrong column count. Nothing loaded.')",
+                                    "type": "Expression"
+                                },
+                                "errorCode": "400"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Stage as text",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "File is usable",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_jotform_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "fileName": "@pipeline().parameters.fileName"
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_sql_stage",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageReadSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "AzureSqlSink",
+                        "preCopyScript": "TRUNCATE TABLE stg.refund_submissions;",
+                        "writeBehavior": "insert"
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": false,
+                        "mappings": [
+                            {
+                                "source": {
+                                    "name": "Submission ID",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "submission_id",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Submission Date",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "submission_date",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Store",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "store",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Area Coach",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "area_coach",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Captured By",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "captured_by",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Customer Full Name",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "customer_name",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Customer Contact Number",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "customer_contact",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Date of Transaction",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "transaction_date",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Amount",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "amount",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Reason",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "reason",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Card First 6 Digits",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "card_first6",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Card Last 4 Digits",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "card_last4",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Bank Statement",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "bank_statement",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "POPIA Consent",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "popia_consent",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Recon Reviewed At",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "recon_reviewed_at",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Sent To Bank At",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "sent_to_bank_at",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Closed At",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "closed_at",
+                                    "type": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Status",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "status",
+                                    "type": "String"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "Merge",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Stage as text",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "dbo.usp_merge_refunds",
+                        "storedProcedureParameters": {
+                            "run_id": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().RunId",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "ds_sql_query",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": true
+                }
+            },
+            {
+                "name": "Rows reconcile",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Merge",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "expression": {
+                        "type": "Expression",
+                        "value": "@and(equals(activity('Stage as text').output.rowsCopied, activity('Merge').output.firstRow.staged), equals(activity('Merge').output.firstRow.staged, add(activity('Merge').output.firstRow.rejected, add(activity('Merge').output.firstRow.inserted, activity('Merge').output.firstRow.updated))))"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Stop count mismatch",
+                            "type": "Fail",
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat('Copied ', string(activity('Stage as text').output.rowsCopied), ', staged ', string(activity('Merge').output.firstRow.staged), ', rejected ', string(activity('Merge').output.firstRow.rejected), ', inserted ', string(activity('Merge').output.firstRow.inserted), ', updated ', string(activity('Merge').output.firstRow.updated), '. Counts do not reconcile.')",
+                                    "type": "Expression"
+                                },
+                                "errorCode": "500"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Build exceptions",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Rows reconcile",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "dbo.usp_build_refund_exceptions",
+                        "storedProcedureParameters": {
+                            "run_id": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().RunId",
+                                    "type": "Expression"
+                                }
+                            },
+                            "as_of_date": {
+                                "type": "Datetime",
+                                "value": {
+                                    "value": "@pipeline().parameters.asOfDate",
+                                    "type": "Expression"
+                                }
+                            },
+                            "staged": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@activity('Merge').output.firstRow.staged",
+                                    "type": "Expression"
+                                }
+                            },
+                            "rejected": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@activity('Merge').output.firstRow.rejected",
+                                    "type": "Expression"
+                                }
+                            },
+                            "inserted": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@activity('Merge').output.firstRow.inserted",
+                                    "type": "Expression"
+                                }
+                            },
+                            "updated": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@activity('Merge').output.firstRow.updated",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "ds_sql_query",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "Write exceptions report",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Build exceptions",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_sql_query",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_report_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "fileName": {
+                                "value": "@concat('refund_exceptions_', pipeline().parameters.asOfDate, '.csv')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT e.exception_type, e.submission_id, r.store, r.area_coach, r.submitted_at, r.amount, e.detail, e.as_of_date FROM rpt.refund_exception e JOIN dbo.refund_request r ON r.submission_id = e.submission_id ORDER BY e.exception_type, r.area_coach, r.submitted_at",
+                        "queryTimeout": "00:10:00"
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "fileExtension": ".csv"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Write run report",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Build exceptions",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 30,
+                    "secureInput": false,
+                    "secureOutput": false
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_sql_query",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_report_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "fileName": {
+                                "value": "@concat('refund_run_', pipeline().RunId, '.csv')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "queryTimeout": "00:10:00",
+                        "sqlReaderQuery": {
+                            "type": "Expression",
+                            "value": "@concat('SELECT r.run_id, r.as_of_date, r.staged, r.rejected, r.inserted, r.updated, r.exceptions, j.reason AS reject_reason, j.submission_id AS rejected_id, j.raw_amount FROM rpt.refund_run r LEFT JOIN rpt.refund_reject j ON j.run_id = r.run_id WHERE r.run_id = ''', pipeline().RunId, '''')"
+                        }
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "fileExtension": ".csv"
+                        }
+                    }
+                }
+            }
+        ],
+        "annotations": [
+            "refunds",
+            "portfolio"
+        ]
+    }
+}
